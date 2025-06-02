@@ -30,6 +30,7 @@ export interface Story {
 export interface StoryCreationRequest {
   initialPrompt: string;
   title?: string;
+  stream?: boolean;
 }
 
 export interface StoryContinuationRequest {
@@ -37,4 +38,8 @@ export interface StoryContinuationRequest {
   userChoice: string;
   isCustomInput: boolean;
   maxWords?: number;
+  stream?: boolean;
+  content?: string;
+  suggestions?: string[];
+  skipGeneration?: boolean;
 }

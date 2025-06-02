@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { ObjectId } from 'mongodb';
 import { getDatabase } from '@/lib/mongodb';
-import { generateInitialStory, continueStory } from '@/lib/openai';
+import {
+  generateInitialStory,
+  continueStory,
+  generateInitialStoryStream,
+  continueStoryStream,
+} from '@/lib/openai';
 import { authOptions } from '@/lib/auth';
 import {
   Story,
@@ -19,8 +24,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action } = body;
+    const { action, stream } = body;
 
+    // Check if streaming is requested
+    if (stream) {
+      if (action === 'create') {
+        return await createNewStoryStream(body, session.user.id);
+      } else if (action === 'continue') {
+        return await continueExistingStoryStream(body, session.user.id);
+      }
+    }
+
+    // Non-streaming (original) behavior
     if (action === 'create') {
       return await createNewStory(body, session.user.id);
     } else if (action === 'continue') {
@@ -84,9 +99,17 @@ async function createNewStory(data: StoryCreationRequest, userId: string) {
 
 async function continueExistingStory(
   data: StoryContinuationRequest,
-  userId: string
+  _userId: string // Prefix with underscore to indicate intentionally unused
 ) {
-  const { storyId, userChoice, isCustomInput, maxWords } = data;
+  const {
+    storyId,
+    userChoice,
+    isCustomInput,
+    maxWords,
+    content,
+    suggestions,
+    skipGeneration,
+  } = data;
 
   if (!storyId || !userChoice) {
     return NextResponse.json(
@@ -100,25 +123,36 @@ async function continueExistingStory(
   // Get the existing story
   const story = await db.collection<Story>('stories').findOne({
     _id: new ObjectId(storyId),
-    userId: new ObjectId(userId),
+    userId: new ObjectId(_userId),
   });
 
   if (!story) {
     return NextResponse.json({ error: 'Story not found' }, { status: 404 });
   }
 
-  // Get the full story content so far
-  const previousContent = story.segments
-    .map((segment) => segment.content)
-    .join('\n\n');
+  let result;
 
-  // Generate the continuation using OpenAI with the specified word limit
-  const result = await continueStory(
-    previousContent,
-    userChoice,
-    isCustomInput,
-    maxWords || 150 // Default to 150 words if not specified
-  );
+  if (skipGeneration && content) {
+    // Use provided content and suggestions (from streaming)
+    result = {
+      content,
+      suggestions: suggestions || [],
+      wordCount: content.split(' ').length,
+    };
+  } else {
+    // Get the full story content so far
+    const previousContent = story.segments
+      .map((segment) => segment.content)
+      .join('\n\n');
+
+    // Generate the continuation using OpenAI with the specified word limit
+    result = await continueStory(
+      previousContent,
+      userChoice,
+      isCustomInput,
+      maxWords || 150 // Default to 150 words if not specified
+    );
+  }
 
   // Create new story segment
   const newSegment: StorySegment = {
@@ -147,6 +181,93 @@ async function continueExistingStory(
     wordCount: result.wordCount,
     totalWordCount: story.totalWordCount + result.wordCount,
   });
+}
+
+async function createNewStoryStream(
+  data: StoryCreationRequest,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  userId: string
+) {
+  const { initialPrompt } = data; // Remove unused title variable
+
+  if (!initialPrompt) {
+    return NextResponse.json(
+      { error: 'Initial prompt is required' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const { stream } = await generateInitialStoryStream(initialPrompt);
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  } catch (error) {
+    console.error('Error creating story stream:', error);
+    return NextResponse.json(
+      { error: 'Failed to generate story' },
+      { status: 500 }
+    );
+  }
+}
+
+async function continueExistingStoryStream(
+  data: StoryContinuationRequest,
+  userId: string
+) {
+  const { storyId, userChoice, isCustomInput, maxWords } = data;
+
+  if (!storyId || !userChoice) {
+    return NextResponse.json(
+      { error: 'Story ID and user choice are required' },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const db = await getDatabase();
+
+    // Get the existing story
+    const story = await db.collection<Story>('stories').findOne({
+      _id: new ObjectId(storyId),
+      userId: new ObjectId(userId),
+    });
+
+    if (!story) {
+      return NextResponse.json({ error: 'Story not found' }, { status: 404 });
+    }
+
+    // Get the full story content so far
+    const previousContent = story.segments
+      .map((segment) => segment.content)
+      .join('\n\n');
+
+    const { stream } = await continueStoryStream(
+      previousContent,
+      userChoice,
+      isCustomInput,
+      maxWords || 150
+    );
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      },
+    });
+  } catch (error) {
+    console.error('Error continuing story stream:', error);
+    return NextResponse.json(
+      { error: 'Failed to continue story' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function GET(request: NextRequest) {

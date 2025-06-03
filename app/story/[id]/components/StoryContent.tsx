@@ -12,7 +12,7 @@ export function StoryContent({
   streamingContent,
   isStreaming,
 }: StoryContentProps) {
-  const { displayedText, isTyping } = useTypewriter({
+  const { displayedText } = useTypewriter({
     text: streamingContent,
     speed: 20, // Adjust speed as needed (lower = faster)
     isActive: isStreaming,

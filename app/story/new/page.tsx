@@ -18,7 +18,7 @@ export default function NewStory() {
   const [streamingContent, setStreamingContent] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
-  const { displayedText, isTyping } = useTypewriter({
+  const { displayedText } = useTypewriter({
     text: streamingContent,
     speed: 20, // Adjust speed as needed (lower = faster)
     isActive: isStreaming,

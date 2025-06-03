@@ -140,6 +140,10 @@ export async function continueStoryStream(
         let contentStarted = false;
         let contentCompleted = false;
         let suggestionNotificationSent = false;
+        let lastSentLength = 0;
+        let isInSuggestionsField = false;
+        let suggestionsStarted = false;
+        const currentSuggestions: string[] = [];
 
         try {
           for await (const chunk of stream) {
@@ -161,7 +165,7 @@ export async function continueStoryStream(
               }
 
               if (contentStarted && !contentCompleted) {
-                // Extract current content up to the closing quote (but not including suggestions)
+                // Extract current content up to the closing quote
                 const fullAfterContent = fullContent.substring(
                   fullContent.indexOf('"content":') + '"content":'.length
                 );
@@ -175,13 +179,12 @@ export async function continueStoryStream(
                     .replace(/\\"/g, '"')
                     .replace(/\\\\/g, '\\');
 
-                  if (
-                    extractedContent !== currentStreamContent &&
-                    extractedContent.length > currentStreamContent.length
-                  ) {
+                  // Send updates more frequently - even for small changes
+                  if (extractedContent.length > lastSentLength) {
                     currentStreamContent = extractedContent;
+                    lastSentLength = extractedContent.length;
 
-                    // Send streaming update
+                    // Send streaming update immediately for each new content
                     controller.enqueue(
                       encoder.encode(
                         `data: ${JSON.stringify({
@@ -193,14 +196,13 @@ export async function continueStoryStream(
                   }
                 }
 
-                // Improved detection for content field completion
-                // Look for the closing quote of the content field followed by comma and next field
+                // Check if content field is complete
                 const contentFieldCompletePattern =
                   /"content"\s*:\s*"[^"]*(?:\\.[^"]*)*"\s*,/;
                 if (contentFieldCompletePattern.test(fullContent)) {
                   contentCompleted = true;
 
-                  // Send suggestions generation notification immediately when content is done
+                  // Send suggestions generation notification
                   if (!suggestionNotificationSent) {
                     suggestionNotificationSent = true;
                     controller.enqueue(
@@ -213,13 +215,71 @@ export async function continueStoryStream(
                   }
                 }
               }
+
+              // Track if we're inside the suggestions field
+              if (
+                contentCompleted &&
+                !isInSuggestionsField &&
+                fullContent.includes('"suggestions":')
+              ) {
+                isInSuggestionsField = true;
+              }
+
+              if (isInSuggestionsField && !suggestionsStarted) {
+                // Look for the opening bracket of the suggestions array
+                const suggestionsMatch =
+                  fullContent.match(/"suggestions":\s*\[/);
+                if (suggestionsMatch) {
+                  suggestionsStarted = true;
+                }
+              }
+
+              if (suggestionsStarted) {
+                // Extract suggestions as they're being generated
+                const suggestionsStart =
+                  fullContent.indexOf('"suggestions":') +
+                  '"suggestions":'.length;
+                const suggestionsContent =
+                  fullContent.substring(suggestionsStart);
+
+                // Match individual suggestions within the array
+                const suggestionPattern = /"([^"]*(?:\\.[^"]*)*)"/g;
+                const matches = [
+                  ...suggestionsContent.matchAll(suggestionPattern),
+                ];
+
+                // Process new suggestions
+                for (
+                  let i = currentSuggestions.length;
+                  i < matches.length;
+                  i++
+                ) {
+                  if (matches[i] && matches[i][1]) {
+                    const suggestion = matches[i][1]
+                      .replace(/\\n/g, '\n')
+                      .replace(/\\"/g, '"')
+                      .replace(/\\\\/g, '\\');
+
+                    currentSuggestions.push(suggestion);
+
+                    // Send individual suggestion as it's completed
+                    controller.enqueue(
+                      encoder.encode(
+                        `data: ${JSON.stringify({
+                          type: 'suggestion',
+                          suggestion: suggestion,
+                          suggestionIndex: i,
+                        })}\n\n`
+                      )
+                    );
+                  }
+                }
+              }
             }
           }
 
           // Send final complete response
-          console.log('Raw AI response for debugging:', fullContent);
           const validResponse = ensureValidJsonResponse(fullContent);
-          console.log('Parsed response:', validResponse);
           const wordCount = validResponse.content.split(' ').length;
 
           const result = {

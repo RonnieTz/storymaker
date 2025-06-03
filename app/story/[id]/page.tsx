@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useStory } from './hooks/useStory';
@@ -9,35 +9,51 @@ import { StoryContent } from './components/StoryContent';
 import { StoryContinuationControls } from './components/StoryContinuationControls';
 
 export default function StoryPage() {
-  const params = useParams();
-  const storyId = params.id as string;
-  const [maxWords, setMaxWords] = useState(150);
+  const { id } = useParams();
+  const storyId = id as string;
 
-  const { story, loading, error, setError, fetchStory, status } =
-    useStory(storyId);
+  const {
+    story,
+    loading,
+    error: storyError,
+    fetchStory,
+    status,
+  } = useStory(storyId);
+  const [error, setError] = useState('');
+  const [maxWords, setMaxWords] = useState(150);
 
   const {
     continuing,
     streamingContent,
     isStreaming,
     isGeneratingSuggestions,
+    streamingSuggestions,
     continueStoryWithStreaming,
   } = useStoryContinuation({
     storyId,
     maxWords,
-    showCustomInput: false, // This is now managed internally in StoryContinuationControls
+    showCustomInput: false,
     fetchStory,
     setError,
   });
+
+  useEffect(() => {
+    if (storyError) {
+      setError(storyError);
+    }
+  }, [storyError]);
 
   const handleContinueStory = (userChoice: string, isCustomInput: boolean) => {
     continueStoryWithStreaming(userChoice, isCustomInput);
   };
 
-  if (status === 'loading' || loading) {
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600"></div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your story...</p>
+        </div>
       </div>
     );
   }
@@ -63,7 +79,27 @@ export default function StoryPage() {
     );
   }
 
-  if (!story) return null;
+  if (!story) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            Story Not Found
+          </h1>
+          <p className="text-gray-600 mb-6">
+            The story you&apos;re looking for doesn&apos;t exist or you
+            don&apos;t have access to it.
+          </p>
+          <Link
+            href="/dashboard"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-md font-medium"
+          >
+            Back to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -92,14 +128,13 @@ export default function StoryPage() {
 
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* Story Header */}
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">
               {story.title}
             </h1>
             <p className="text-gray-600">
-              {story.totalWordCount} words • {story.segments.length} segments •
-              Last updated: {new Date(story.updatedAt).toLocaleDateString()}
+              {story.totalWordCount} words • Created{' '}
+              {new Date(story.createdAt).toLocaleDateString()}
             </p>
           </div>
 
@@ -111,15 +146,23 @@ export default function StoryPage() {
           />
 
           {/* Continue Story Section */}
-          {story.currentSuggestions && (
+          {((!continuing && (story.currentSuggestions?.length ?? 0) > 0) ||
+            streamingSuggestions.length > 0 ||
+            isGeneratingSuggestions) && (
             <StoryContinuationControls
-              suggestions={story.currentSuggestions}
+              suggestions={
+                isGeneratingSuggestions || continuing
+                  ? streamingSuggestions
+                  : story.currentSuggestions || []
+              }
               onContinueStory={handleContinueStory}
               continuing={continuing}
               isStreaming={isStreaming}
               error={error}
               maxWords={maxWords}
               setMaxWords={setMaxWords}
+              isGeneratingSuggestions={isGeneratingSuggestions}
+              streamingSuggestions={streamingSuggestions}
             />
           )}
 
@@ -131,7 +174,9 @@ export default function StoryPage() {
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-3"></div>
                   <span className="text-indigo-700">
                     {isGeneratingSuggestions
-                      ? 'Generating story suggestions...'
+                      ? `Generating story suggestions... (${
+                          streamingSuggestions.filter((s) => s).length
+                        } ready)`
                       : 'AI is writing your story in real-time...'}
                   </span>
                 </div>

@@ -19,6 +19,9 @@ export function useStoryContinuation({
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
+  const [streamingSuggestions, setStreamingSuggestions] = useState<string[]>(
+    []
+  );
 
   const saveStorySegment = async (
     content: string,
@@ -59,6 +62,7 @@ export function useStoryContinuation({
     setIsStreaming(true);
     setStreamingContent('');
     setIsGeneratingSuggestions(false);
+    setStreamingSuggestions([]);
     setError('');
 
     try {
@@ -99,14 +103,22 @@ export function useStoryContinuation({
               try {
                 const data = JSON.parse(line.slice(6));
 
-                if (data.type === 'error') {
-                  throw new Error(data.error);
+                if (data.error || data.type === 'error') {
+                  throw new Error(data.error || 'Streaming error occurred');
                 }
 
-                if (data.type === 'content') {
+                // Handle streaming content updates
+                if (data.type === 'content' && data.content) {
                   setStreamingContent(data.content);
                 } else if (data.type === 'generating_suggestions') {
                   setIsGeneratingSuggestions(true);
+                } else if (data.type === 'suggestion' && data.suggestion) {
+                  // Handle individual suggestion streaming
+                  setStreamingSuggestions((prev) => {
+                    const newSuggestions = [...prev];
+                    newSuggestions[data.suggestionIndex] = data.suggestion;
+                    return newSuggestions;
+                  });
                 } else if (data.type === 'complete') {
                   await saveStorySegment(
                     data.content,
@@ -120,6 +132,7 @@ export function useStoryContinuation({
                   setIsStreaming(false);
                   setStreamingContent('');
                   setIsGeneratingSuggestions(false);
+                  setStreamingSuggestions([]);
                   return;
                 }
               } catch (parseError) {
@@ -139,8 +152,8 @@ export function useStoryContinuation({
       setIsStreaming(false);
       setStreamingContent('');
       setIsGeneratingSuggestions(false);
+      setStreamingSuggestions([]);
     }
-    // Remove the finally block since we're now handling state reset in the success and error cases
   };
 
   return {
@@ -148,6 +161,7 @@ export function useStoryContinuation({
     streamingContent,
     isStreaming,
     isGeneratingSuggestions,
+    streamingSuggestions,
     continueStoryWithStreaming,
   };
 }

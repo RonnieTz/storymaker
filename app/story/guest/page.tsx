@@ -16,6 +16,7 @@ export default function GuestStory() {
   const {
     story,
     suggestions,
+    streamingSuggestions,
     loading,
     error,
     isStreaming,
@@ -121,15 +122,23 @@ export default function GuestStory() {
               />
 
               {/* Continue Story Section */}
-              {suggestions.length > 0 && !isStreaming && (
-                <GuestStoryContinuationControls
-                  suggestions={suggestions}
-                  onContinueStory={handleContinueStory}
-                  continuing={continuingStory}
-                  isStreaming={isStreaming}
-                  error={error}
-                />
-              )}
+              {((!continuingStory && suggestions.length > 0) ||
+                streamingSuggestions.length > 0 ||
+                isGeneratingSuggestions) &&
+                !isStreaming && (
+                  <GuestStoryContinuationControls
+                    suggestions={
+                      isGeneratingSuggestions || continuingStory
+                        ? streamingSuggestions
+                        : suggestions
+                    }
+                    onContinueStory={handleContinueStory}
+                    continuing={continuingStory}
+                    error={error}
+                    isGeneratingSuggestions={isGeneratingSuggestions}
+                    streamingSuggestions={streamingSuggestions}
+                  />
+                )}
 
               {/* Streaming Status */}
               {(isStreaming || isGeneratingSuggestions) && (
@@ -139,7 +148,9 @@ export default function GuestStory() {
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-3"></div>
                       <span className="text-indigo-700">
                         {isGeneratingSuggestions
-                          ? 'Generating story suggestions...'
+                          ? `Generating story suggestions... (${
+                              streamingSuggestions.filter((s) => s).length
+                            } ready)`
                           : 'AI is writing your story in real-time...'}
                       </span>
                     </div>

@@ -11,6 +11,8 @@ interface StoryContinuationControlsProps {
   error: string;
   maxWords: number;
   setMaxWords: (words: number) => void;
+  isGeneratingSuggestions?: boolean;
+  streamingSuggestions?: string[];
 }
 
 export function StoryContinuationControls({
@@ -21,6 +23,8 @@ export function StoryContinuationControls({
   error,
   maxWords,
   setMaxWords,
+  isGeneratingSuggestions,
+  streamingSuggestions,
 }: StoryContinuationControlsProps) {
   const [customInput, setCustomInput] = useState('');
   const [showCustomInput, setShowCustomInput] = useState(false);
@@ -43,7 +47,7 @@ export function StoryContinuationControls({
     setCustomInput('');
   };
 
-  if (suggestions.length === 0 || isStreaming) {
+  if (suggestions.length === 0 && !isGeneratingSuggestions) {
     return null;
   }
 
@@ -69,6 +73,8 @@ export function StoryContinuationControls({
         suggestions={suggestions}
         onSuggestionClick={handleSuggestionClick}
         continuing={continuing}
+        isGeneratingSuggestions={isGeneratingSuggestions}
+        streamingSuggestions={streamingSuggestions}
       />
 
       {!showCustomInput ? (

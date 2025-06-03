@@ -8,7 +8,7 @@ interface UseTypewriterProps {
 
 export function useTypewriter({
   text,
-  speed = 500,
+  speed = 50, // Changed back to reasonable word-based speed
   isActive = true,
 }: UseTypewriterProps) {
   const [displayedText, setDisplayedText] = useState('');

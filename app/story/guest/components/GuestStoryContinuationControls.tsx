@@ -4,16 +4,18 @@ interface GuestStoryContinuationControlsProps {
   suggestions: string[];
   onContinueStory: (userChoice: string, isCustomInput: boolean) => void;
   continuing: boolean;
-  isStreaming: boolean;
   error: string;
+  isGeneratingSuggestions?: boolean;
+  streamingSuggestions?: string[];
 }
 
 export function GuestStoryContinuationControls({
   suggestions,
   onContinueStory,
   continuing,
-  isStreaming,
   error,
+  isGeneratingSuggestions = false,
+  streamingSuggestions = [],
 }: GuestStoryContinuationControlsProps) {
   const [showCustomInput, setShowCustomInput] = useState(false);
   const [customInput, setCustomInput] = useState('');
@@ -36,9 +38,14 @@ export function GuestStoryContinuationControls({
     setCustomInput('');
   };
 
-  if (suggestions.length === 0 || isStreaming) {
+  if (suggestions.length === 0 && !isGeneratingSuggestions) {
     return null;
   }
+
+  // Use streaming suggestions when they're being generated, otherwise use final suggestions
+  const displaySuggestions = isGeneratingSuggestions
+    ? streamingSuggestions
+    : suggestions;
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -53,16 +60,38 @@ export function GuestStoryContinuationControls({
       )}
 
       <div className="space-y-3 mb-6">
-        {suggestions.map((suggestion, index) => (
+        {displaySuggestions.map((suggestion, index) => (
           <button
             key={index}
-            onClick={() => handleSuggestionClick(suggestion)}
-            disabled={continuing}
-            className="w-full text-left p-4 border border-gray-300 rounded-lg hover:border-indigo-500 hover:bg-indigo-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            onClick={() => suggestion && handleSuggestionClick(suggestion)}
+            disabled={continuing || !suggestion}
+            className={`w-full text-left p-4 border rounded-lg transition-all duration-300 disabled:cursor-not-allowed ${
+              suggestion
+                ? 'border-gray-300 hover:border-indigo-500 hover:bg-indigo-50 opacity-100'
+                : 'border-gray-100 bg-gray-50 opacity-60 animate-pulse'
+            }`}
           >
-            <span className="text-gray-900">{suggestion}</span>
+            <span className="text-gray-900">
+              {suggestion ||
+                (isGeneratingSuggestions ? 'Generating suggestion...' : '')}
+            </span>
           </button>
         ))}
+
+        {/* Show placeholder buttons for expected suggestions while streaming */}
+        {isGeneratingSuggestions &&
+          displaySuggestions.length < 5 &&
+          Array.from({ length: 5 - displaySuggestions.length }).map(
+            (_, index) => (
+              <button
+                key={`placeholder-${index}`}
+                disabled
+                className="w-full text-left p-4 border border-gray-100 bg-gray-50 rounded-lg opacity-60 animate-pulse cursor-not-allowed"
+              >
+                <span className="text-gray-500">Generating suggestion...</span>
+              </button>
+            )
+          )}
       </div>
 
       {!showCustomInput ? (

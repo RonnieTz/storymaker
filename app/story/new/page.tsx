@@ -20,7 +20,7 @@ export default function NewStory() {
 
   const { displayedText } = useTypewriter({
     text: streamingContent,
-    speed: 20, // Adjust speed as needed (lower = faster)
+    speed: 15, // Changed from 20 to 15 for faster character-by-character typing
     isActive: isStreaming,
   });
 

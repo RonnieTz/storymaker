@@ -25,12 +25,16 @@ export function useGuestStory() {
   const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [continuingStory, setContinuingStory] = useState(false);
+  const [streamingSuggestions, setStreamingSuggestions] = useState<string[]>(
+    []
+  );
 
   const createStory = async (title: string, initialPrompt: string) => {
     setLoading(true);
     setIsStreaming(true);
     setStreamingContent('');
     setIsGeneratingSuggestions(false);
+    setStreamingSuggestions([]);
     setError('');
 
     try {
@@ -44,7 +48,7 @@ export function useGuestStory() {
           title: title || undefined,
           initialPrompt,
           stream: true,
-          guestMode: true,
+          guest: true,
         }),
       });
 
@@ -74,10 +78,18 @@ export function useGuestStory() {
                   throw new Error(data.error || 'Streaming error occurred');
                 }
 
+                // Handle streaming content updates
                 if (data.type === 'content' && data.content) {
                   setStreamingContent(data.content);
                 } else if (data.type === 'generating_suggestions') {
                   setIsGeneratingSuggestions(true);
+                } else if (data.type === 'suggestion' && data.suggestion) {
+                  // Handle individual suggestion streaming
+                  setStreamingSuggestions((prev) => {
+                    const newSuggestions = [...prev];
+                    newSuggestions[data.suggestionIndex] = data.suggestion;
+                    return newSuggestions;
+                  });
                 }
 
                 if (
@@ -107,6 +119,7 @@ export function useGuestStory() {
                   setSuggestions(data.suggestions);
                   setIsStreaming(false);
                   setIsGeneratingSuggestions(false);
+                  setStreamingSuggestions([]);
                   return;
                 }
               } catch (parseError) {
@@ -126,6 +139,7 @@ export function useGuestStory() {
       setIsStreaming(false);
       setStreamingContent('');
       setIsGeneratingSuggestions(false);
+      setStreamingSuggestions([]);
     }
   };
 
@@ -136,9 +150,14 @@ export function useGuestStory() {
     setIsStreaming(true);
     setStreamingContent('');
     setIsGeneratingSuggestions(false);
+    setStreamingSuggestions([]);
     setError('');
 
     try {
+      const previousContent = story.segments
+        .map((segment) => segment.content)
+        .join('\n\n');
+
       const response = await fetch('/api/stories', {
         method: 'POST',
         headers: {
@@ -148,10 +167,9 @@ export function useGuestStory() {
           action: 'continue',
           userChoice,
           isCustomInput,
-          maxWords: 150,
+          previousContent,
           stream: true,
-          guestMode: true,
-          previousContent: story.segments.map((s) => s.content).join('\n\n'),
+          guest: true,
         }),
       });
 
@@ -181,10 +199,18 @@ export function useGuestStory() {
                   throw new Error(data.error || 'Streaming error occurred');
                 }
 
+                // Handle streaming content updates
                 if (data.type === 'content' && data.content) {
                   setStreamingContent(data.content);
                 } else if (data.type === 'generating_suggestions') {
                   setIsGeneratingSuggestions(true);
+                } else if (data.type === 'suggestion' && data.suggestion) {
+                  // Handle individual suggestion streaming
+                  setStreamingSuggestions((prev) => {
+                    const newSuggestions = [...prev];
+                    newSuggestions[data.suggestionIndex] = data.suggestion;
+                    return newSuggestions;
+                  });
                 }
 
                 if (data.type === 'complete') {
@@ -209,6 +235,7 @@ export function useGuestStory() {
                   setIsStreaming(false);
                   setIsGeneratingSuggestions(false);
                   setStreamingContent('');
+                  setStreamingSuggestions([]);
                   return;
                 }
               } catch (parseError) {
@@ -221,30 +248,31 @@ export function useGuestStory() {
 
       throw new Error('Incomplete response received');
     } catch (error) {
-      console.error('Continue story error:', error);
+      console.error('Story continuation error:', error);
       setError('An error occurred. Please try again.');
     } finally {
       setContinuingStory(false);
       setIsStreaming(false);
       setStreamingContent('');
       setIsGeneratingSuggestions(false);
+      setStreamingSuggestions([]);
     }
   };
 
   const resetStory = () => {
     setStory(null);
     setSuggestions([]);
-    setError('');
     setStreamingContent('');
-    setLoading(false);
     setIsStreaming(false);
     setIsGeneratingSuggestions(false);
-    setContinuingStory(false);
+    setStreamingSuggestions([]);
+    setError('');
   };
 
   return {
     story,
     suggestions,
+    streamingSuggestions,
     loading,
     error,
     isStreaming,
@@ -254,6 +282,5 @@ export function useGuestStory() {
     createStory,
     continueStory,
     resetStory,
-    setError,
   };
 }

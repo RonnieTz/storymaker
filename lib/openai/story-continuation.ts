@@ -13,7 +13,12 @@ export async function continueStory(
       isCustomInput ? 'a custom direction' : 'a chosen suggestion'
     } for how the story should continue.
     
-    IMPORTANT: The user's choice is NOT already part of the story. You must incorporate their choice/direction into your continuation. Write the next part of the story that includes and builds upon their suggestion.
+    IMPORTANT RULES:
+    1. The user's choice is NOT already part of the story. You must incorporate their choice/direction into your continuation.
+    2. Stay focused ONLY on the suggestion provided. Do not introduce new characters, locations, or plot elements unless they are directly implied by the suggestion.
+    3. Keep the continuation simple and directly related to the user's direction.
+    4. Do not expand the scope beyond what the suggestion implies.
+    5. Write a natural continuation that flows from the previous content and incorporates the user's choice.
     
     Continue the story with approximately ${maxWords} words (aim for ${Math.floor(
       maxWords * 0.8
@@ -72,7 +77,12 @@ export async function continueStoryStream(
   const systemPrompt = isCustomInput
     ? `You are a creative story writer. The user has provided a custom direction for how the story should continue.
       
-      IMPORTANT: The user's direction is NOT already part of the story. You must incorporate their direction into your continuation. Write the next part of the story that includes and builds upon their suggestion. Also add plot twist if possible.
+      IMPORTANT RULES:
+      1. The user's direction is NOT already part of the story. You must incorporate their direction into your continuation.
+      2. Stay focused ONLY on the direction provided. Do not introduce new characters, locations, or major plot elements unless they are directly implied by the user's direction.
+      3. Keep the continuation simple and directly related to the user's input.
+      4. Do not expand the scope beyond what the direction implies.
+      5. Write a natural continuation that flows from the previous content and incorporates the user's direction.
       
       The continuation should be around ${maxWords} words long. After the story continuation, provide 3-5 suggestions for how the user might want to continue the story next.
       
@@ -85,7 +95,12 @@ export async function continueStoryStream(
       Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story.`
     : `You are a creative story writer. The user has chosen a suggestion for how the story should continue.
       
-      IMPORTANT: The user's chosen suggestion is NOT already part of the story. You must incorporate their choice into your continuation. Write the next part of the story that includes and builds upon their chosen direction.
+      IMPORTANT RULES:
+      1. The user's chosen suggestion is NOT already part of the story. You must incorporate their choice into your continuation.
+      2. Stay focused ONLY on the chosen suggestion. Do not introduce new characters, locations, or major plot elements unless they are directly implied by the suggestion.
+      3. Keep the continuation simple and directly related to the chosen suggestion.
+      4. Do not expand the scope beyond what the suggestion implies.
+      5. Write a natural continuation that flows from the previous content and incorporates the chosen suggestion.
       
       The continuation should be around ${maxWords} words long. After the story continuation, provide 3-5 suggestions for how the user might want to continue the story next.
       

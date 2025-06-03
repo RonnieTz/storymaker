@@ -11,13 +11,33 @@ const streamingService = new StoryStreamingService();
 export class StoryRequestHandlers {
   async handlePost(request: NextRequest) {
     try {
+      const body = await request.json();
+      const { action, stream, guestMode } = body;
+
+      // Handle guest mode - no authentication required
+      if (guestMode) {
+        if (stream) {
+          if (action === 'create') {
+            return await this.handleCreateStoryStreamGuest(body);
+          } else if (action === 'continue') {
+            return await this.handleContinueStoryStreamGuest(body);
+          }
+        }
+        // For non-streaming guest mode, we can still return the streaming service
+        // since guest mode doesn't save to database anyway
+        if (action === 'create') {
+          return await this.handleCreateStoryStreamGuest(body);
+        } else if (action === 'continue') {
+          return await this.handleContinueStoryStreamGuest(body);
+        }
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
+      }
+
+      // Original authenticated behavior
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
       }
-
-      const body = await request.json();
-      const { action, stream } = body;
 
       // Check if streaming is requested
       if (stream) {
@@ -204,6 +224,53 @@ export class StoryRequestHandlers {
       }
       return NextResponse.json(
         { error: 'Failed to continue story' },
+        { status: 500 }
+      );
+    }
+  }
+
+  private async handleCreateStoryStreamGuest(data: StoryCreationRequest) {
+    try {
+      return await streamingService.createStoryStream(data);
+    } catch (error) {
+      console.error('Error creating guest story stream:', error);
+      if (
+        error instanceof Error &&
+        error.message === 'Initial prompt is required'
+      ) {
+        return NextResponse.json(
+          { error: 'Initial prompt is required' },
+          { status: 400 }
+        );
+      }
+      return NextResponse.json(
+        { error: 'Failed to generate guest story' },
+        { status: 500 }
+      );
+    }
+  }
+
+  private async handleContinueStoryStreamGuest(data: StoryContinuationRequest) {
+    try {
+      return await streamingService.continueStoryStream(data);
+    } catch (error) {
+      console.error('Error continuing guest story stream:', error);
+      if (error instanceof Error) {
+        if (error.message === 'Story ID and user choice are required') {
+          return NextResponse.json(
+            { error: 'Story ID and user choice are required' },
+            { status: 400 }
+          );
+        }
+        if (error.message === 'Story not found') {
+          return NextResponse.json(
+            { error: 'Story not found' },
+            { status: 404 }
+          );
+        }
+      }
+      return NextResponse.json(
+        { error: 'Failed to continue guest story' },
         { status: 500 }
       );
     }

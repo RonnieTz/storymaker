@@ -22,32 +22,47 @@ export class StoryStreamingService {
     });
   }
 
-  async continueStoryStream(data: StoryContinuationRequest, userId: string) {
-    const { storyId, userChoice, isCustomInput, maxWords } = data;
+  async continueStoryStream(data: StoryContinuationRequest, userId?: string) {
+    const { storyId, userChoice, isCustomInput, maxWords, previousContent } =
+      data;
 
-    if (!storyId || !userChoice) {
-      throw new Error('Story ID and user choice are required');
+    if (!userChoice) {
+      throw new Error('User choice is required');
     }
 
-    const db = await getDatabase();
+    // For guest mode, use provided previousContent
+    let fullPreviousContent = previousContent;
 
-    // Get the existing story
-    const story = await db.collection<Story>('stories').findOne({
-      _id: new ObjectId(storyId),
-      userId: new ObjectId(userId),
-    });
+    // For authenticated users, get content from database
+    if (userId && storyId) {
+      if (!storyId) {
+        throw new Error('Story ID is required for authenticated users');
+      }
 
-    if (!story) {
-      throw new Error('Story not found');
+      const db = await getDatabase();
+
+      // Get the existing story
+      const story = await db.collection<Story>('stories').findOne({
+        _id: new ObjectId(storyId),
+        userId: new ObjectId(userId),
+      });
+
+      if (!story) {
+        throw new Error('Story not found');
+      }
+
+      // Get the full story content so far
+      fullPreviousContent = story.segments
+        .map((segment) => segment.content)
+        .join('\n\n');
     }
 
-    // Get the full story content so far
-    const previousContent = story.segments
-      .map((segment) => segment.content)
-      .join('\n\n');
+    if (!fullPreviousContent) {
+      throw new Error('Previous content is required');
+    }
 
     const { stream } = await continueStoryStream(
-      previousContent,
+      fullPreviousContent,
       userChoice,
       isCustomInput,
       maxWords || 150

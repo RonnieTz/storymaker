@@ -35,10 +35,11 @@ export interface StoryCreationRequest {
   suggestions?: string[];
   wordCount?: number;
   skipGeneration?: boolean;
+  guestMode?: boolean;
 }
 
 export interface StoryContinuationRequest {
-  storyId: string;
+  storyId?: string;
   userChoice: string;
   isCustomInput: boolean;
   maxWords?: number;
@@ -46,4 +47,6 @@ export interface StoryContinuationRequest {
   content?: string;
   suggestions?: string[];
   skipGeneration?: boolean;
+  guestMode?: boolean;
+  previousContent?: string;
 }

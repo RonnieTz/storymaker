@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTypewriter } from '@/lib/hooks/useTypewriter';
 
 export default function NewStory() {
   const { status } = useSession();
@@ -15,6 +16,12 @@ export default function NewStory() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+
+  const { displayedText, isTyping } = useTypewriter({
+    text: streamingContent,
+    speed: 20, // Adjust speed as needed (lower = faster)
+    isActive: isStreaming,
+  });
 
   useEffect(() => {
     if (status === 'unauthenticated') {
@@ -273,9 +280,9 @@ export default function NewStory() {
                 </h2>
                 <div className="prose max-w-none">
                   <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
-                    {streamingContent}
-                    {isStreaming && (
-                      <span className="inline-block w-2 h-5 bg-blue-500 animate-pulse ml-1"></span>
+                    {displayedText}
+                    {(isStreaming || isTyping) && (
+                      <span className="inline-block w-1 h-4 bg-gray-400 opacity-60 animate-pulse ml-1"></span>
                     )}
                   </div>
                 </div>

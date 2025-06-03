@@ -195,7 +195,9 @@ export async function continueStoryStream(
           }
 
           // Send final complete response
+          console.log('Raw AI response for debugging:', fullContent);
           const validResponse = ensureValidJsonResponse(fullContent);
+          console.log('Parsed response:', validResponse);
           const wordCount = validResponse.content.split(' ').length;
 
           const result = {

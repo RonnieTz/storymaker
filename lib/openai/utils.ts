@@ -10,16 +10,30 @@ export function ensureValidJsonResponse(content: string): {
       .replace(/```\s*/g, '')
       .trim();
 
+    console.log('Attempting to parse cleaned content:', cleaned);
     const parsed = JSON.parse(cleaned);
 
     // Validate the structure
     if (parsed.content && Array.isArray(parsed.suggestions)) {
+      console.log(
+        'Successfully parsed AI response with suggestions:',
+        parsed.suggestions
+      );
       return parsed;
     }
 
     // If structure is invalid, treat as plain text
+    console.warn(
+      'Invalid JSON structure, missing content or suggestions array'
+    );
     throw new Error('Invalid JSON structure');
-  } catch {
+  } catch (error) {
+    console.error('JSON parsing failed:', error);
+    console.warn(
+      'Falling back to default suggestions for content:',
+      content.substring(0, 100) + '...'
+    );
+
     // If JSON parsing fails, treat the entire content as story text
     // and generate some basic suggestions
     return {

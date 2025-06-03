@@ -91,6 +91,8 @@ export async function generateInitialStoryStream(
         let currentStreamContent = '';
         let isInContentField = false;
         let contentStarted = false;
+        let contentCompleted = false;
+        let suggestionNotificationSent = false;
 
         try {
           for await (const chunk of stream) {
@@ -118,7 +120,7 @@ export async function generateInitialStoryStream(
                 }
               }
 
-              if (contentStarted) {
+              if (contentStarted && !contentCompleted) {
                 // Extract current content up to the closing quote (but not including suggestions)
                 const fullAfterContent = fullContent.substring(
                   fullContent.indexOf('"content":') + '"content":'.length
@@ -145,6 +147,26 @@ export async function generateInitialStoryStream(
                         `data: ${JSON.stringify({
                           type: 'content',
                           content: currentStreamContent,
+                        })}\n\n`
+                      )
+                    );
+                  }
+                }
+
+                // Improved detection for content field completion
+                // Look for the closing quote of the content field followed by comma and next field
+                const contentFieldCompletePattern =
+                  /"content"\s*:\s*"[^"]*(?:\\.[^"]*)*"\s*,/;
+                if (contentFieldCompletePattern.test(fullContent)) {
+                  contentCompleted = true;
+
+                  // Send suggestions generation notification immediately when content is done
+                  if (!suggestionNotificationSent) {
+                    suggestionNotificationSent = true;
+                    controller.enqueue(
+                      encoder.encode(
+                        `data: ${JSON.stringify({
+                          type: 'generating_suggestions',
                         })}\n\n`
                       )
                     );

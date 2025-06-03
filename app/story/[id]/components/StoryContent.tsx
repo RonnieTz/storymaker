@@ -38,9 +38,6 @@ export function StoryContent({
             <hr className="my-6 border-gray-200" />
             <div className="text-gray-700 leading-relaxed whitespace-pre-wrap relative">
               {displayedText}
-              {(isStreaming || isTyping) && (
-                <span className="inline-block w-1 h-4 bg-gray-400 opacity-60 animate-pulse ml-1"></span>
-              )}
             </div>
           </div>
         )}

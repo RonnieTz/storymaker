@@ -20,6 +20,7 @@ export default function StoryPage() {
     continuing,
     streamingContent,
     isStreaming,
+    isGeneratingSuggestions,
     continueStoryWithStreaming,
   } = useStoryContinuation({
     storyId,
@@ -123,13 +124,15 @@ export default function StoryPage() {
           )}
 
           {/* Streaming Status */}
-          {isStreaming && (
+          {(isStreaming || isGeneratingSuggestions) && (
             <div className="bg-white shadow rounded-lg p-8">
               <div className="text-center">
                 <div className="inline-flex items-center px-4 py-2 bg-indigo-50 rounded-lg">
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 mr-3"></div>
                   <span className="text-indigo-700">
-                    AI is writing your story in real-time...
+                    {isGeneratingSuggestions
+                      ? 'Generating story suggestions...'
+                      : 'AI is writing your story in real-time...'}
                   </span>
                 </div>
               </div>

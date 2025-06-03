@@ -9,7 +9,7 @@ export interface StoryStreamResult {
 }
 
 export interface StreamMessage {
-  type: 'content' | 'complete' | 'error';
+  type: 'content' | 'generating_suggestions' | 'complete' | 'error';
   content?: string;
   suggestions?: string[];
   wordCount?: number;

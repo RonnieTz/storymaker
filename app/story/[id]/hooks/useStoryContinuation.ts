@@ -18,6 +18,7 @@ export function useStoryContinuation({
   const [continuing, setContinuing] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
 
   const saveStorySegment = async (
     content: string,
@@ -57,6 +58,7 @@ export function useStoryContinuation({
     setContinuing(true);
     setIsStreaming(true);
     setStreamingContent('');
+    setIsGeneratingSuggestions(false);
     setError('');
 
     try {
@@ -103,13 +105,21 @@ export function useStoryContinuation({
 
                 if (data.type === 'content') {
                   setStreamingContent(data.content);
+                } else if (data.type === 'generating_suggestions') {
+                  setIsGeneratingSuggestions(true);
                 } else if (data.type === 'complete') {
                   await saveStorySegment(
                     data.content,
                     data.suggestions,
                     userChoice
                   );
+                  // Keep streaming states active while fetching story data
                   await fetchStory();
+                  // Only reset states after story data is successfully fetched
+                  setContinuing(false);
+                  setIsStreaming(false);
+                  setStreamingContent('');
+                  setIsGeneratingSuggestions(false);
                   return;
                 }
               } catch (parseError) {
@@ -124,17 +134,20 @@ export function useStoryContinuation({
     } catch (error) {
       console.error('Streaming error:', error);
       setError('An error occurred. Please try again.');
-    } finally {
+      // Only reset states on error
       setContinuing(false);
       setIsStreaming(false);
       setStreamingContent('');
+      setIsGeneratingSuggestions(false);
     }
+    // Remove the finally block since we're now handling state reset in the success and error cases
   };
 
   return {
     continuing,
     streamingContent,
     isStreaming,
+    isGeneratingSuggestions,
     continueStoryWithStreaming,
   };
 }

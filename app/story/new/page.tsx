@@ -14,6 +14,7 @@ export default function NewStory() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
+  const [isGeneratingSuggestions, setIsGeneratingSuggestions] = useState(false);
   const [streamingContent, setStreamingContent] = useState('');
   const [showPreview, setShowPreview] = useState(false);
 
@@ -68,6 +69,7 @@ export default function NewStory() {
     setLoading(true);
     setIsStreaming(true);
     setStreamingContent('');
+    setIsGeneratingSuggestions(false);
     setError('');
     setShowPreview(true);
 
@@ -114,6 +116,8 @@ export default function NewStory() {
                 // Handle streaming content updates
                 if (data.type === 'content' && data.content) {
                   setStreamingContent(data.content);
+                } else if (data.type === 'generating_suggestions') {
+                  setIsGeneratingSuggestions(true);
                 }
 
                 // Handle final complete response
@@ -167,6 +171,7 @@ export default function NewStory() {
       setLoading(false);
       setIsStreaming(false);
       setStreamingContent('');
+      setIsGeneratingSuggestions(false);
       setShowPreview(false);
     }
   };
@@ -281,14 +286,14 @@ export default function NewStory() {
                 <div className="prose max-w-none">
                   <div className="whitespace-pre-wrap text-gray-800 leading-relaxed">
                     {displayedText}
-                    {(isStreaming || isTyping) && (
-                      <span className="inline-block w-1 h-4 bg-gray-400 opacity-60 animate-pulse ml-1"></span>
-                    )}
                   </div>
                 </div>
-                {isStreaming && (
+                {(isStreaming || isGeneratingSuggestions) && (
                   <div className="mt-4 text-sm text-gray-500">
-                    ✨ Generating your story...
+                    ✨{' '}
+                    {isGeneratingSuggestions
+                      ? 'Generating story suggestions...'
+                      : 'Generating your story...'}
                   </div>
                 )}
               </div>

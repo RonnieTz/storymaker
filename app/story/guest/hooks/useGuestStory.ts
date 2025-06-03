@@ -48,7 +48,7 @@ export function useGuestStory() {
           title: title || undefined,
           initialPrompt,
           stream: true,
-          guest: true,
+          guestMode: true,
         }),
       });
 
@@ -169,7 +169,7 @@ export function useGuestStory() {
           isCustomInput,
           previousContent,
           stream: true,
-          guest: true,
+          guestMode: true,
         }),
       });
 

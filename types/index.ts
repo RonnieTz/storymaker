@@ -31,6 +31,10 @@ export interface StoryCreationRequest {
   initialPrompt: string;
   title?: string;
   stream?: boolean;
+  content?: string;
+  suggestions?: string[];
+  wordCount?: number;
+  skipGeneration?: boolean;
 }
 
 export interface StoryContinuationRequest {

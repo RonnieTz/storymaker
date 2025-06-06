@@ -64,6 +64,16 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full space-y-8">
+        {/* Home Button */}
+        <div className="text-center">
+          <Link
+            href="/"
+            className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+          >
+            ← Back to Home
+          </Link>
+        </div>
+
         <div>
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Create your StoryMaker account
@@ -136,6 +146,16 @@ export default function SignUp() {
             </Link>
           </div>
         </form>
+
+        {/* Guest Button */}
+        <div className="text-center">
+          <Link
+            href="/story/guest"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            Continue as Guest
+          </Link>
+        </div>
       </div>
     </div>
   );

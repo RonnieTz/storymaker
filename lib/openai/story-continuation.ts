@@ -32,7 +32,7 @@ export async function continueStory(
           )}`
         : '';
 
-    const systemPrompt = `You are continuing a story with strong opinions about narrative events. The user has provided ${
+    const systemPrompt = `You are continuing a story with observational commentary woven into the narrative. The user has provided ${
       isCustomInput ? 'a custom direction' : 'a chosen suggestion'
     } for how the story should continue.
     
@@ -44,7 +44,7 @@ export async function continueStory(
     5. Write a natural continuation that flows from the previous content and incorporates the user's choice.
     6. Consider the original story concept and maintain thematic consistency with the initial vision.
     7. Be aware of previous suggestions to maintain narrative coherence and avoid contradictions.
-    8. Express your thoughts and opinions about the events as they unfold - comment on character decisions, dramatic moments, plot developments, or interesting details. Weave these opinions naturally into the narrative voice.
+    8. Include thoughtful observations and commentary about the events, character decisions, dramatic moments, and interesting details. Express these as narrative observations rather than personal opinions (avoid using "I think" or "I believe"). Present insights as natural commentary within the storytelling voice without breaking the fourth wall.
     
     Continue the story with approximately ${maxWords} words (aim for ${Math.floor(
       maxWords * 0.8
@@ -54,7 +54,7 @@ export async function continueStory(
     
     Format your response as JSON with this structure:
     {
-      "content": "the story continuation here with your opinions woven in",
+      "content": "the story continuation here with observational commentary woven in",
       "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
     }`;
 
@@ -120,7 +120,7 @@ export async function continueStoryStream(
       : '';
 
   const systemPrompt = isCustomInput
-    ? `You are a creative story writer with strong opinions about narrative events. The user has provided a custom direction for how the story should continue.
+    ? `You are a creative story writer who weaves observational commentary into the narrative. The user has provided a custom direction for how the story should continue.
       
       IMPORTANT RULES:
       1. The user's direction is NOT already part of the story. You must incorporate their direction into your continuation.
@@ -130,18 +130,18 @@ export async function continueStoryStream(
       5. Write a natural continuation that flows from the previous content and incorporates the user's direction.
       6. Consider the original story concept and maintain thematic consistency with the initial vision.
       7. Be aware of previous suggestions to maintain narrative coherence and avoid contradictions.
-      8. Express your thoughts and opinions about the events as they unfold - comment on character decisions, dramatic moments, plot developments, or interesting details. Weave these opinions naturally into the narrative voice.
+      8. Include thoughtful observations and commentary about the events, character decisions, dramatic moments, and interesting details. Express these as narrative observations rather than personal opinions (avoid using "I think" or "I believe"). Present insights as natural commentary within the storytelling voice without breaking the fourth wall.
       
       The continuation should be around ${maxWords} words long. After the story continuation, provide 3-5 suggestions for how the user might want to continue the story next.
       
       IMPORTANT: You MUST format your response as valid JSON with this exact structure:
       {
-        "content": "the story continuation here with your opinions woven in",
+        "content": "the story continuation here with observational commentary woven in",
         "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
       }
       
-      Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should be engaging and opinionated, sharing your perspective on what's happening in the story.`
-    : `You are a creative story writer with strong opinions about narrative events. The user has chosen a suggestion for how the story should continue.
+      Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should include insightful commentary without breaking the fourth wall or referring to yourself as the writer.`
+    : `You are a creative story writer who weaves observational commentary into the narrative. The user has chosen a suggestion for how the story should continue.
       
       IMPORTANT RULES:
       1. The user's chosen suggestion is NOT already part of the story. You must incorporate their choice into your continuation.
@@ -151,17 +151,17 @@ export async function continueStoryStream(
       5. Write a natural continuation that flows from the previous content and incorporates the chosen suggestion.
       6. Consider the original story concept and maintain thematic consistency with the initial vision.
       7. Be aware of previous suggestions to maintain narrative coherence and avoid contradictions.
-      8. Express your thoughts and opinions about the events as they unfold - comment on character decisions, dramatic moments, plot developments, or interesting details. Weave these opinions naturally into the narrative voice.
+      8. Include thoughtful observations and commentary about the events, character decisions, dramatic moments, and interesting details. Express these as narrative observations rather than personal opinions (avoid using "I think" or "I believe"). Present insights as natural commentary within the storytelling voice without breaking the fourth wall.
       
       The continuation should be around ${maxWords} words long. After the story continuation, provide 3-5 suggestions for how the user might want to continue the story next.
       
       IMPORTANT: You MUST format your response as valid JSON with this exact structure:
       {
-        "content": "the story continuation here with your opinions woven in",
+        "content": "the story continuation here with observational commentary woven in",
         "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
       }
       
-      Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should be engaging and opinionated, sharing your perspective on what's happening in the story.`;
+      Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should include insightful commentary without breaking the fourth wall or referring to yourself as the writer.`;
 
   const stream = await withTimeout(
     openai.chat.completions.create({

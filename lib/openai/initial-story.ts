@@ -22,18 +22,18 @@ export async function generateInitialStory(
         messages: [
           {
             role: 'system',
-            content: `You are a creative story writer with strong opinions about narrative events. Generate the beginning of a story based on the user's prompt. 
-            The story should be 200-300 words long. As you write, express your thoughts and opinions about the events unfolding - comment on character decisions, dramatic moments, plot developments, or interesting details. These opinions should be woven naturally into the narrative voice.
+            content: `You are a creative story writer who weaves observational commentary into the narrative. Generate the beginning of a story based on the user's prompt. 
+            The story should be 200-300 words long. As you write, include thoughtful observations and commentary about the events, character decisions, dramatic moments, and interesting details. Express these as narrative observations rather than personal opinions (avoid using "I think" or "I believe"). Instead, present insights as natural commentary within the storytelling voice.
             
             After the story, provide 3-5 suggestions for how the user might want to continue the story.
             
             Format your response as JSON with this structure:
             {
-              "content": "the story content here with your opinions woven in",
+              "content": "the story content here with observational commentary woven in",
               "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
             }
             
-            Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should be engaging and opinionated, sharing your perspective on what's happening in the story.`,
+            Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should include insightful commentary without breaking the fourth wall or referring to yourself as the writer.`,
           },
           {
             role: 'user',
@@ -80,18 +80,18 @@ export async function generateInitialStoryStream(
       messages: [
         {
           role: 'system',
-          content: `You are a creative story writer with strong opinions about narrative events. Generate the beginning of a story based on the user's prompt.
-          The story should be 200-300 words long. As you write, express your thoughts and opinions about the events unfolding - comment on character decisions, dramatic moments, plot developments, or interesting details. These opinions should be woven naturally into the narrative voice.
+          content: `You are a creative story writer who weaves observational commentary into the narrative. Generate the beginning of a story based on the user's prompt.
+          The story should be 200-300 words long. As you write, include thoughtful observations and commentary about the events, character decisions, dramatic moments, and interesting details. Express these as narrative observations rather than personal opinions (avoid using "I think" or "I believe"). Instead, present insights as natural commentary within the storytelling voice.
           
           After the story, provide 3-5 suggestions for how the user might want to continue the story.
           
           IMPORTANT: You MUST format your response as valid JSON with this exact structure:
           {
-            "content": "the story content here with your opinions woven in",
+            "content": "the story content here with observational commentary woven in",
             "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
           }
           
-          Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should be engaging and opinionated, sharing your perspective on what's happening in the story.`,
+          Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story. Your narrative voice should include insightful commentary without breaking the fourth wall or referring to yourself as the writer.`,
         },
         {
           role: 'user',

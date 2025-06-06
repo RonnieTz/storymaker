@@ -7,6 +7,7 @@ import { GuestStoryForm } from './components/GuestStoryForm';
 import { GuestStoryPreview } from './components/GuestStoryPreview';
 import { GuestStoryContent } from './components/GuestStoryContent';
 import { GuestStoryContinuationControls } from './components/GuestStoryContinuationControls';
+import { StoryDownloadButton } from '@/components/StoryDownloadButton';
 
 export default function GuestStory() {
   const [title, setTitle] = useState('');
@@ -106,12 +107,15 @@ export default function GuestStory() {
                     segments
                   </p>
                 </div>
-                <button
-                  onClick={startNewStory}
-                  className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium"
-                >
-                  Start New Story
-                </button>
+                <div className="flex items-center space-x-3">
+                  <StoryDownloadButton story={story} />
+                  <button
+                    onClick={startNewStory}
+                    className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-md font-medium"
+                  >
+                    Start New Story
+                  </button>
+                </div>
               </div>
 
               {/* Story Content */}

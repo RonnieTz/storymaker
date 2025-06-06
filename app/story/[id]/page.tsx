@@ -7,6 +7,7 @@ import { useStory } from './hooks/useStory';
 import { useStoryContinuation } from './hooks/useStoryContinuation';
 import { StoryContent } from './components/StoryContent';
 import { StoryContinuationControls } from './components/StoryContinuationControls';
+import { StoryDownloadButton } from '@/components/StoryDownloadButton';
 
 export default function StoryPage() {
   const { id } = useParams();
@@ -129,13 +130,18 @@ export default function StoryPage() {
       <main className="max-w-4xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {story.title}
-            </h1>
-            <p className="text-gray-600">
-              {story.totalWordCount} words • Created{' '}
-              {new Date(story.createdAt).toLocaleDateString()}
-            </p>
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  {story.title}
+                </h1>
+                <p className="text-gray-600">
+                  {story.totalWordCount} words • Created{' '}
+                  {new Date(story.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <StoryDownloadButton story={story} />
+            </div>
           </div>
 
           {/* Story Content */}

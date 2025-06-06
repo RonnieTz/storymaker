@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Story } from '@/types';
+import { StoryDownloadButton } from '@/components/StoryDownloadButton';
 
 interface StoryCardProps {
   story: Story;
@@ -14,27 +15,34 @@ export function StoryCard({ story, onDeleteClick }: StoryCardProps) {
           <h3 className="text-lg font-medium text-gray-900 flex-1">
             {story.title}
           </h3>
-          <button
-            onClick={() =>
-              onDeleteClick(story._id?.toString() || '', story.title)
-            }
-            className="ml-2 p-1 text-gray-400 hover:text-red-600 transition-colors"
-            title="Delete story"
-          >
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
+          <div className="flex items-center space-x-2 ml-2">
+            <StoryDownloadButton
+              story={story}
+              variant="button"
+              className="p-1 text-xs"
+            />
+            <button
+              onClick={() =>
+                onDeleteClick(story._id?.toString() || '', story.title)
+              }
+              className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+              title="Delete story"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-              />
-            </svg>
-          </button>
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
         <p className="text-sm text-gray-500 mb-4">
           {story.totalWordCount} words • {story.segments.length} segments

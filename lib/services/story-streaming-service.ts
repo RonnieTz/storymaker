@@ -32,6 +32,8 @@ export class StoryStreamingService {
 
     // For guest mode, use provided previousContent
     let fullPreviousContent = previousContent;
+    let initialPrompt: string | undefined;
+    let previousSuggestions: string[] = [];
 
     // For authenticated users, get content from database
     if (userId && storyId) {
@@ -55,6 +57,12 @@ export class StoryStreamingService {
       fullPreviousContent = story.segments
         .map((segment) => segment.content)
         .join('\n\n');
+
+      // Get the initial prompt from the first segment
+      initialPrompt = story.segments[0]?.userPrompt;
+
+      // Get previous suggestions for context
+      previousSuggestions = story.currentSuggestions || [];
     }
 
     if (!fullPreviousContent) {
@@ -65,7 +73,9 @@ export class StoryStreamingService {
       fullPreviousContent,
       userChoice,
       isCustomInput,
-      maxWords || 150
+      maxWords || 150,
+      initialPrompt,
+      previousSuggestions
     );
 
     return new Response(stream, {

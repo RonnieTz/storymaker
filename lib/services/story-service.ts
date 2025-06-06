@@ -115,12 +115,20 @@ export class StoryService {
         .map((segment) => segment.content)
         .join('\n\n');
 
+      // Get the initial prompt from the first segment
+      const initialPrompt = story.segments[0]?.userPrompt;
+
+      // Get previous suggestions for context
+      const previousSuggestions = story.currentSuggestions || [];
+
       // Generate the continuation using OpenAI with the specified word limit
       result = await continueStory(
         previousContent,
         userChoice,
         isCustomInput,
-        maxWords || 150 // Default to 150 words if not specified
+        maxWords || 150, // Default to 150 words if not specified
+        initialPrompt,
+        previousSuggestions
       );
     }
 

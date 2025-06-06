@@ -16,9 +16,22 @@ export async function continueStory(
   previousContent: string,
   userChoice: string,
   isCustomInput: boolean,
-  maxWords: number = 300
+  maxWords: number = 300,
+  initialPrompt?: string,
+  previousSuggestions?: string[]
 ): Promise<StoryGenerationResult> {
   try {
+    const contextInfo = initialPrompt
+      ? `\n\nOriginal story concept: ${initialPrompt}`
+      : '';
+
+    const suggestionHistory =
+      previousSuggestions && previousSuggestions.length > 0
+        ? `\n\nPrevious suggestions that were available (for context): ${previousSuggestions.join(
+            ', '
+          )}`
+        : '';
+
     const systemPrompt = `You are continuing a story. The user has provided ${
       isCustomInput ? 'a custom direction' : 'a chosen suggestion'
     } for how the story should continue.
@@ -29,6 +42,8 @@ export async function continueStory(
     3. Keep the continuation simple and directly related to the user's direction.
     4. Do not expand the scope beyond what the suggestion implies.
     5. Write a natural continuation that flows from the previous content and incorporates the user's choice.
+    6. Consider the original story concept and maintain thematic consistency with the initial vision.
+    7. Be aware of previous suggestions to maintain narrative coherence and avoid contradictions.
     
     Continue the story with approximately ${maxWords} words (aim for ${Math.floor(
       maxWords * 0.8
@@ -52,7 +67,7 @@ export async function continueStory(
           },
           {
             role: 'user',
-            content: `Previous story content:\n${previousContent}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
+            content: `Previous story content:\n${previousContent}${contextInfo}${suggestionHistory}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
           },
         ],
         temperature: 1.3,
@@ -88,8 +103,21 @@ export async function continueStoryStream(
   previousContent: string,
   userChoice: string,
   isCustomInput: boolean,
-  maxWords: number = 150
+  maxWords: number = 150,
+  initialPrompt?: string,
+  previousSuggestions?: string[]
 ): Promise<StoryStreamResult> {
+  const contextInfo = initialPrompt
+    ? `\n\nOriginal story concept: ${initialPrompt}`
+    : '';
+
+  const suggestionHistory =
+    previousSuggestions && previousSuggestions.length > 0
+      ? `\n\nPrevious suggestions that were available (for context): ${previousSuggestions.join(
+          ', '
+        )}`
+      : '';
+
   const systemPrompt = isCustomInput
     ? `You are a creative story writer. The user has provided a custom direction for how the story should continue.
       
@@ -99,6 +127,8 @@ export async function continueStoryStream(
       3. Keep the continuation simple and directly related to the user's input.
       4. Do not expand the scope beyond what the direction implies.
       5. Write a natural continuation that flows from the previous content and incorporates the user's direction.
+      6. Consider the original story concept and maintain thematic consistency with the initial vision.
+      7. Be aware of previous suggestions to maintain narrative coherence and avoid contradictions.
       
       The continuation should be around ${maxWords} words long. After the story continuation, provide 3-5 suggestions for how the user might want to continue the story next.
       
@@ -117,6 +147,8 @@ export async function continueStoryStream(
       3. Keep the continuation simple and directly related to the chosen suggestion.
       4. Do not expand the scope beyond what the suggestion implies.
       5. Write a natural continuation that flows from the previous content and incorporates the chosen suggestion.
+      6. Consider the original story concept and maintain thematic consistency with the initial vision.
+      7. Be aware of previous suggestions to maintain narrative coherence and avoid contradictions.
       
       The continuation should be around ${maxWords} words long. After the story continuation, provide 3-5 suggestions for how the user might want to continue the story next.
       
@@ -138,7 +170,7 @@ export async function continueStoryStream(
         },
         {
           role: 'user',
-          content: `Previous story content:\n${previousContent}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
+          content: `Previous story content:\n${previousContent}${contextInfo}${suggestionHistory}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
         },
       ],
       temperature: 0.8,

@@ -70,7 +70,7 @@ export async function continueStory(
             content: `Previous story content:\n${previousContent}${contextInfo}${suggestionHistory}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
           },
         ],
-        temperature: 1.3,
+        temperature: 0.8,
         max_tokens: Math.max(500, Math.floor(maxWords * 2)),
       }),
       50000 // 50 second timeout for API call

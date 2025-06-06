@@ -2,34 +2,47 @@ import { openai } from './client';
 import { StoryGenerationResult, StoryStreamResult } from './types';
 import { cleanResponse, ensureValidJsonResponse } from './utils';
 
+// Add timeout wrapper for OpenAI calls
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    ),
+  ]);
+};
+
 export async function generateInitialStory(
   prompt: string
 ): Promise<StoryGenerationResult> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a creative story writer. Generate the beginning of a story based on the user's prompt. 
-          The story should be 200-300 words long. After the story, provide 3-5 suggestions for how the user might want to continue the story.
-          
-          Format your response as JSON with this structure:
+    const completion = await withTimeout(
+      openai.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
           {
-            "content": "the story content here",
-            "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
-          }
-          
-          Make the suggestions specific and engaging, giving the user clear direction options for the story.`,
-        },
-        {
-          role: 'user',
-          content: prompt,
-        },
-      ],
-      temperature: 0.8,
-      max_tokens: 1000,
-    });
+            role: 'system',
+            content: `You are a creative story writer. Generate the beginning of a story based on the user's prompt. 
+            The story should be 200-300 words long. After the story, provide 3-5 suggestions for how the user might want to continue the story.
+            
+            Format your response as JSON with this structure:
+            {
+              "content": "the story content here",
+              "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
+            }
+            
+            Make the suggestions specific and engaging, giving the user clear direction options for the story.`,
+          },
+          {
+            role: 'user',
+            content: prompt,
+          },
+        ],
+        temperature: 0.8,
+        max_tokens: 1000,
+      }),
+      50000 // 50 second timeout for initial API call
+    );
 
     console.log(completion.choices[0].message);
 
@@ -47,8 +60,11 @@ export async function generateInitialStory(
       suggestions: parsed.suggestions,
       wordCount,
     };
-  } catch (_error) {
-    console.error('Error generating initial story:', _error);
+  } catch (error) {
+    console.error('Error generating initial story:', error);
+    if (error instanceof Error && error.message === 'Request timeout') {
+      throw new Error('Story generation timed out. Please try again.');
+    }
     throw new Error('Failed to generate story');
   }
 }
@@ -56,31 +72,34 @@ export async function generateInitialStory(
 export async function generateInitialStoryStream(
   prompt: string
 ): Promise<StoryStreamResult> {
-  const stream = await openai.chat.completions.create({
-    model: 'deepseek-chat',
-    messages: [
-      {
-        role: 'system',
-        content: `You are a creative story writer. Generate the beginning of a story based on the user's prompt.
-        The story should be 200-300 words long. After the story, provide 3-5 suggestions for how the user might want to continue the story.
-        
-        IMPORTANT: You MUST format your response as valid JSON with this exact structure:
+  const stream = await withTimeout(
+    openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
         {
-          "content": "the story content here",
-          "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
-        }
-        
-        Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story.`,
-      },
-      {
-        role: 'user',
-        content: prompt,
-      },
-    ],
-    temperature: 0.8,
-    max_tokens: 1000,
-    stream: true,
-  });
+          role: 'system',
+          content: `You are a creative story writer. Generate the beginning of a story based on the user's prompt.
+          The story should be 200-300 words long. After the story, provide 3-5 suggestions for how the user might want to continue the story.
+          
+          IMPORTANT: You MUST format your response as valid JSON with this exact structure:
+          {
+            "content": "the story content here",
+            "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
+          }
+          
+          Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story.`,
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      temperature: 0.8,
+      max_tokens: 1000,
+      stream: true,
+    }),
+    50000 // 50 second timeout for stream initialization
+  );
 
   const encoder = new TextEncoder();
 
@@ -99,7 +118,13 @@ export async function generateInitialStoryStream(
         const currentSuggestions: string[] = [];
 
         try {
+          // Remove the timeout for streaming process - let it run as long as needed
+          // Only timeout if no data is received for extended period
+          let lastDataReceived = Date.now();
+          const maxIdleTime = 30000; // 30 seconds without any data
+
           for await (const chunk of stream) {
+            lastDataReceived = Date.now();
             const content = chunk.choices[0]?.delta?.content || '';
             if (content) {
               fullContent += content;
@@ -228,6 +253,14 @@ export async function generateInitialStoryStream(
                   }
                 }
               }
+            }
+
+            // Check for idle timeout only
+            if (Date.now() - lastDataReceived > maxIdleTime) {
+              console.warn(
+                'Stream idle timeout - no data received for 30 seconds'
+              );
+              break;
             }
           }
 

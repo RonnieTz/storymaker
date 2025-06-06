@@ -2,6 +2,16 @@ import { openai } from './client';
 import { StoryGenerationResult, StoryStreamResult } from './types';
 import { cleanResponse, ensureValidJsonResponse } from './utils';
 
+// Add timeout wrapper for OpenAI calls
+const withTimeout = <T>(promise: Promise<T>, timeoutMs: number): Promise<T> => {
+  return Promise.race([
+    promise,
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    ),
+  ]);
+};
+
 export async function continueStory(
   previousContent: string,
   userChoice: string,
@@ -32,21 +42,24 @@ export async function continueStory(
       "suggestions": ["suggestion 1", "suggestion 2", "suggestion 3", "suggestion 4", "suggestion 5"]
     }`;
 
-    const completion = await openai.chat.completions.create({
-      model: 'deepseek-chat',
-      messages: [
-        {
-          role: 'system',
-          content: systemPrompt,
-        },
-        {
-          role: 'user',
-          content: `Previous story content:\n${previousContent}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
-        },
-      ],
-      temperature: 1.3,
-      max_tokens: Math.max(500, Math.floor(maxWords * 2)),
-    });
+    const completion = await withTimeout(
+      openai.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt,
+          },
+          {
+            role: 'user',
+            content: `Previous story content:\n${previousContent}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
+          },
+        ],
+        temperature: 1.3,
+        max_tokens: Math.max(500, Math.floor(maxWords * 2)),
+      }),
+      50000 // 50 second timeout for API call
+    );
 
     const response = completion.choices[0].message.content;
     if (!response) {
@@ -64,6 +77,9 @@ export async function continueStory(
     };
   } catch (error) {
     console.error('Error continuing story:', error);
+    if (error instanceof Error && error.message === 'Request timeout') {
+      throw new Error('Story continuation timed out. Please try again.');
+    }
     throw new Error('Failed to continue story');
   }
 }
@@ -112,22 +128,25 @@ export async function continueStoryStream(
       
       Do not include any markdown code blocks or additional text outside the JSON. Make the suggestions specific and engaging, giving the user clear direction options for the story.`;
 
-  const stream = await openai.chat.completions.create({
-    model: 'deepseek-chat',
-    messages: [
-      {
-        role: 'system',
-        content: systemPrompt,
-      },
-      {
-        role: 'user',
-        content: `Previous story content:\n${previousContent}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
-      },
-    ],
-    temperature: 0.8,
-    max_tokens: Math.max(500, Math.floor(maxWords * 2)),
-    stream: true,
-  });
+  const stream = await withTimeout(
+    openai.chat.completions.create({
+      model: 'deepseek-chat',
+      messages: [
+        {
+          role: 'system',
+          content: systemPrompt,
+        },
+        {
+          role: 'user',
+          content: `Previous story content:\n${previousContent}\n\nUser's direction for continuation: ${userChoice}\n\nPlease write the next part of the story that incorporates this direction and moves the story forward.`,
+        },
+      ],
+      temperature: 0.8,
+      max_tokens: Math.max(500, Math.floor(maxWords * 2)),
+      stream: true,
+    }),
+    50000 // 50 second timeout for stream initialization
+  );
 
   const encoder = new TextEncoder();
 
@@ -146,7 +165,12 @@ export async function continueStoryStream(
         const currentSuggestions: string[] = [];
 
         try {
+          // Only timeout if no data is received for extended period
+          let lastDataReceived = Date.now();
+          const maxIdleTime = 30000; // 30 seconds without any data
+
           for await (const chunk of stream) {
+            lastDataReceived = Date.now();
             const content = chunk.choices[0]?.delta?.content || '';
             if (content) {
               fullContent += content;
@@ -275,6 +299,14 @@ export async function continueStoryStream(
                   }
                 }
               }
+            }
+
+            // Check for idle timeout only
+            if (Date.now() - lastDataReceived > maxIdleTime) {
+              console.warn(
+                'Stream idle timeout - no data received for 30 seconds'
+              );
+              break;
             }
           }
 

@@ -14,3 +14,7 @@ export async function GET(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   return await requestHandlers.handleDelete(request);
 }
+
+// Set the runtime to edge for better performance and longer timeouts
+export const runtime = 'nodejs';
+export const maxDuration = 60;
